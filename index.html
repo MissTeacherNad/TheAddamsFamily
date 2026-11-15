@@ -67,9 +67,9 @@
     .game-feedback.ok{border-left-color:#35825c;background:#ecf9f1}.game-feedback.no{border-left-color:#b94762;background:#fff2f5}
     .game-controls{display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-top:17px}
     .game-controls .btn{min-width:124px}.game-score{font-weight:850;font-size:.92rem;color:#553569}
-    .game-teams{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:15px 0}
-    .game-team{background:#f7f1f8;border:1px solid #e6d7eb;border-radius:12px;padding:9px 8px;text-align:center}.game-team strong{display:block;font-size:.85rem;color:#57336b}.game-team .score{font-size:1.55rem;font-weight:850;color:#1e3946}
-    .game-team-controls{display:flex;justify-content:center;gap:6px}.game-team-controls button{width:34px;height:34px;border:1px solid #cbb6d6;background:#fff;border-radius:9px;color:#533165;font-size:1.2rem;line-height:1}
+    .game-teams{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:15px 0}
+    .game-team{background:#f7f1f8;border:1px solid #e6d7eb;border-radius:12px;padding:9px 8px;text-align:center;min-width:0}.game-team strong{display:block;font-size:.85rem;color:#57336b}.game-team .score{font-size:1.55rem;font-weight:850;color:#1e3946}
+    .game-team-setup{margin-top:14px;max-width:350px}.game-team-setup .select{font-weight:650;color:#553569}.game-team-controls{display:flex;justify-content:center;gap:6px}.game-team-controls button{width:34px;height:34px;border:1px solid #cbb6d6;background:#fff;border-radius:9px;color:#533165;font-size:1.2rem;line-height:1}
     .game-answer-input{width:100%;min-height:51px;padding:12px;border-radius:10px;border:1.5px solid #baa6c5;font-size:1.13rem;background:white;color:#213c49;margin-top:14px}
     .game-final{padding:6px 0 3px}.game-final-title{font-size:clamp(1.6rem,3vw,2rem);font-weight:850;color:#513265;margin:9px 0}
     .game-video-wrap{aspect-ratio:16/9;max-width:730px;margin:17px auto 12px;border:4px solid #6b407c;border-radius:17px;overflow:hidden;background:#271934}
@@ -263,13 +263,14 @@ const mkOptions=(correct)=>{
  const a=[...new Set(VOCAB.map(w=>w.en).filter(x=>x!==correct&&x!==correct+'s'))];
  return shuffle([correct,...shuffle(a).slice(0,3)]);
 };
-function initGame(kind){
+function initGame(kind,teamCount=6){
+ teamCount=kind==='classroom'?Math.max(4,Math.min(6,Number(teamCount)||6)):0;
  const poolAll=VOCAB.filter(w=>w.en!=='cousin'||w.id==='cousin-f');
  const pick=shuffle(poolAll);
  const first=pick.slice(0,4).map(w=>({q:w.fr,ans:w.en,options:mkOptions(w.en),w,kind:'choice'}));
  const middle=shuffle(FAMILY_QUESTIONS).map(x=>({...x,options:shuffle([...x.options]),kind:'choice'}));
  const last=pick.slice(4,9).map(w=>({q:kind==='classroom'?w.fr:w.fr,ans:w.en,w,kind:'typing'}));
- game={kind,stage:0,idx:0,sections:[first,middle,last],score:0,errors:[],chosen:'',checked:false,teams:[0,0,0,0],teamCount:3,finished:false,adjectives:[],adjectivesChecked:false};
+ game={kind,stage:0,idx:0,sections:[first,middle,last],score:0,errors:[],chosen:'',checked:false,teams:Array(teamCount).fill(0),teamCount,finished:false,adjectives:[],adjectivesChecked:false};
  renderGame();
 }
 function stageName(stage){return ['Door 1 · The Portrait Gallery','Door 2 · Family Secrets','Door 3 · The Secret Code'][stage];}
@@ -293,13 +294,13 @@ function scoreGameQuestion(){
 }
 function renderGame(){
  const box=$('exercise');
- if(!game){box.innerHTML=`<div class="game-intro"><span class="game-label">WELCOME TO THE MANOR · VOCABULARY GAME</span><h2>Escape the Manor!</h2><p>Trois portes à déverrouiller avec le vocabulaire de la famille, puis une dernière mission musicale.</p><p>En classe entière : les équipes écrivent sur leurs ardoises, puis le professeur affiche la réponse. En solo : l'élève répond directement sur son écran.</p></div><div class="game-modes"><button type="button" id="start-classroom" class="btn primary">👥 Jouer en classe entière</button><button type="button" id="start-solo" class="btn">🎒 Jouer seul(e)</button></div><p class="small-help">15 questions · 3 portes · aucune limite de temps · chanson à la fin, hors score.</p>`;
- $('start-classroom').onclick=()=>initGame('classroom');$('start-solo').onclick=()=>initGame('solo');return;}
+ if(!game){box.innerHTML=`<div class="game-intro"><span class="game-label">WELCOME TO THE MANOR · VOCABULARY GAME</span><h2>Escape the Manor!</h2><p>Trois portes à déverrouiller avec le vocabulaire de la famille, puis une dernière mission musicale.</p><p>En classe entière : les équipes écrivent sur leurs ardoises, puis le professeur affiche la réponse. En solo : l'élève répond directement sur son écran.</p><div class="game-team-setup"><label for="game-team-count" class="control-label">Nombre d’équipes (30 élèves : 6 équipes de 5)</label><select id="game-team-count" class="select" aria-label="Nombre d’équipes"><option value="6" selected>6 équipes · 5 élèves par équipe</option><option value="5">5 équipes · 6 élèves par équipe</option><option value="4">4 équipes · 7 à 8 élèves par équipe</option></select></div></div><div class="game-modes"><button type="button" id="start-classroom" class="btn primary">👥 Jouer en classe entière</button><button type="button" id="start-solo" class="btn">🎒 Jouer seul(e)</button></div><p class="small-help">15 questions · 3 portes · aucune limite de temps · chanson à la fin, hors score.</p>`;
+ $('start-classroom').onclick=()=>initGame('classroom',Number($('game-team-count').value));$('start-solo').onclick=()=>initGame('solo');return;}
  if(game.finished){renderGameFinal(box);return;}
  const isClass=game.kind==='classroom';const q=currentQuestion();const stage=game.stage;const nb=game.sections[stage].length;
  let out=`<div class="game-stagehead"><div><span class="game-label">${isClass?'CLASSROOM MODE':'SOLO MODE'}</span><h2>${stageName(stage)}</h2></div><div class="game-pips">${[0,1,2].map(i=>`<span class="game-pip ${i<stage?'done':i===stage?'active':''}">${i<stage?'✓ ':''}Door ${i+1}</span>`).join('')}</div></div>`;
  out+=`<div class="track"><div style="width:${((game.sections.slice(0,stage).reduce((acc,s)=>acc+s.length,0)+game.idx+1)/15)*100}%"></div></div>`;
- if(isClass){out+=`<div class="game-teams">${game.teams.slice(0,game.teamCount).map((s,i)=>`<div class="game-team"><strong>Équipe ${i+1}</strong><span class="score" id="team-${i}">${s}</span><div class="game-team-controls"><button type="button" data-team="${i}" data-diff="-1" aria-label="Retirer un point à l'équipe ${i+1}">−</button><button type="button" data-team="${i}" data-diff="1" aria-label="Ajouter un point à l'équipe ${i+1}">+</button></div></div>`).join('')}</div>`;}
+ if(isClass){out+=`<div class="game-teams" aria-label="Scores des équipes">${game.teams.slice(0,game.teamCount).map((s,i)=>`<div class="game-team"><strong>Équipe ${i+1}</strong><span class="score" id="team-${i}">${s}</span><div class="game-team-controls"><button type="button" data-team="${i}" data-diff="-1" aria-label="Retirer un point à l'équipe ${i+1}">−</button><button type="button" data-team="${i}" data-diff="1" aria-label="Ajouter un point à l'équipe ${i+1}">+</button></div></div>`).join('')}</div>`;}
  out+=`<div class="game-q"><span class="game-label">Question ${game.idx+1} / ${nb} · ${stage===2?'2 points':'1 point'}</span><div class="prompt">${escapeHtml(q.q)}</div><div class="sub">${stage===0?'Choose the English word.':stage===1?'Who is this person?':'Write the word in English.'}</div>`;
  if(!isClass&&q.kind==='choice'){
   out+=`<div class="game-choices">${q.options.map((v,i)=>`<button type="button" class="game-choice ${game.chosen===v?'chosen':''} ${game.checked&&v===q.ans?'correct':''} ${game.checked&&game.chosen===v&&v!==q.ans?'incorrect':''}" data-answer="${escapeHtml(v)}" ${game.checked?'disabled':''}>${String.fromCharCode(65+i)}. ${escapeHtml(v)}</button>`).join('')}</div>`;
@@ -313,7 +314,7 @@ function renderGame(){
   else{const correct=q.kind==='choice'?game.chosen===q.ans:verify(game.chosen,q.w);fb=`<strong>${correct?'✓ Correct!':'✗ À revoir.'}</strong> ${correct?'Well done!':'Réponse attendue : '+escapeHtml(q.ans)}`;}
   out+=`<div class="game-feedback ${isClass?'':(q.kind==='choice'?game.chosen===q.ans:verify(game.chosen,q.w))?'ok':'no'}" role="status">${fb}</div>`;
  }
- out+=`</div><div class="game-controls"><button type="button" id="game-restart" class="btn muted">↻ Recommencer</button><div class="game-score">${isClass?'Score sur les ardoises':`Score : ${game.score} / ${gameMaxScore()}`}</div><button type="button" id="game-action" class="btn primary">${game.checked?'Question suivante →':isClass?'Afficher la réponse':'Vérifier'}</button></div>`;
+ out+=`</div><div class="game-controls"><button type="button" id="game-restart" class="btn muted">↻ Recommencer</button><div class="game-score">${isClass?'Points attribués par le professeur':`Score : ${game.score} / ${gameMaxScore()}`}</div><button type="button" id="game-action" class="btn primary">${game.checked?'Question suivante →':isClass?'Afficher la réponse':'Vérifier'}</button></div>`;
  box.innerHTML=out;
  $('game-restart').onclick=()=>{if(confirm('Recommencer une nouvelle mission ?'))game=null,renderGame();};
  $('game-action').onclick=()=>{if(game.checked)advanceGame();else if(isClass){game.checked=true;renderGame();}else{if(currentQuestion().kind==='typing'){const input=$('game-answer');game.chosen=input.value.trim();}if(!game.chosen){const field=$('game-answer');if(field)field.focus();return;}scoreGameQuestion();}};
